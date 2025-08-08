@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Interface Serial com Input de Porta</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 0 16px;
+      }
+      label {
+        display: block;
+        margin-top: 12px;
+      }
+      input,
+      textarea,
+      select,
+      button {
+        margin-top: 6px;
+        padding: 8px;
+        font-size: 14px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      textarea {
+        height: 100px;
+      }
+      #log {
+        background: #111;
+        color: #eee;
+        padding: 8px;
+        font-family: monospace;
+        height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      .row > * {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Interface Serial via Backend</h1>
+
+    <label>Nome da Porta (ex: COM3 ou /dev/ttyUSB0)</label>
+    <input
+      id="portName"
+      placeholder="COM3 ou /dev/ttyUSB0"
+      value="/dev/ttyACM0"
+    />
+
+    <div class="row">
+      <div>
+        <label>Baud rate</label>
+        <input id="baudRate" type="number" value="115200" />
+      </div>
+      <div>
+        <label>Tipo de Payload</label>
+        <select id="payloadType">
+          <option value="text" selected>Texto (UTF-8)</option>
+          <option value="hex">Hexadecimal</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Payload</label>
+    <textarea id="payload" placeholder="Digite seu payload"></textarea>
+
+    <button id="connectBtn">Conectar</button>
+    <button id="sendBtn" disabled>Enviar</button>
+    <button id="disconnectBtn" disabled>Desconectar</button>
+
+    <h3>Log</h3>
+    <div id="log"></div>
+
+    <script>
+      const logEl = document.getElementById("log");
+      function log(msg) {
+        const ts = new Date().toLocaleTimeString();
+        logEl.textContent += `[${ts}] ${msg}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      let ws;
+
+      document.getElementById("connectBtn").addEventListener("click", () => {
+        const port = document.getElementById("portName").value.trim();
+        const baudRate = parseInt(
+          document.getElementById("baudRate").value,
+          10
+        );
+
+        if (!port) {
+          log("⚠️ Informe a porta antes de conectar.");
+          return;
+        }
+
+        ws = new WebSocket(`ws://localhost:8080`);
+        ws.onopen = () => {
+          log("🔌 Conectado ao servidor.");
+          ws.send(JSON.stringify({ action: "open", port, baudRate }));
+        };
+
+        ws.onmessage = (event) => {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "log") log(msg.data);
+          if (msg.type === "error") log("❌ " + msg.data);
+          if (msg.type === "status" && msg.data === "open") {
+            document.getElementById("sendBtn").disabled = false;
+            document.getElementById("disconnectBtn").disabled = false;
+          }
+        };
+
+        ws.onerror = (err) => {
+          log("Erro WS: " + err.message);
+        };
+      });
+
+      document.getElementById("sendBtn").addEventListener("click", () => {
+        const payload = document.getElementById("payload").value;
+        const type = document.getElementById("payloadType").value;
+        ws.send(JSON.stringify({ action: "send", payload, type }));
+      });
+
+      document.getElementById("disconnectBtn").addEventListener("click", () => {
+        ws.send(JSON.stringify({ action: "close" }));
+        ws.close();
+        document.getElementById("sendBtn").disabled = true;
+        document.getElementById("disconnectBtn").disabled = true;
+        log("🔌 Desconectado.");
+      });
+    </script>
+  </body>
+</html>

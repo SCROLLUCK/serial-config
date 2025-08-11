@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Interface Serial com Input de Porta</title>
+    <title>Interface Serial via Web Serial API</title>
     <style>
       body {
         font-family: sans-serif;
@@ -47,14 +47,7 @@
     </style>
   </head>
   <body>
-    <h1>Interface Serial via Backend</h1>
-
-    <label>Nome da Porta (ex: COM3 ou /dev/ttyUSB0)</label>
-    <input
-      id="portName"
-      placeholder="COM3 ou /dev/ttyUSB0"
-      value="/dev/ttyACM0"
-    />
+    <h1>Interface Serial via Web Serial API</h1>
 
     <div class="row">
       <div>
@@ -73,7 +66,7 @@
     <label>Payload</label>
     <textarea id="payload" placeholder="Digite seu payload"></textarea>
 
-    <button id="connectBtn">Conectar</button>
+    <button id="connectBtn">Conectar (Escolher Porta)</button>
     <button id="sendBtn" disabled>Enviar</button>
     <button id="disconnectBtn" disabled>Desconectar</button>
 
@@ -88,54 +81,143 @@
         logEl.scrollTop = logEl.scrollHeight;
       }
 
-      let ws;
+      function tratarErroSerial(error) {
+        if (!error) return "Erro desconhecido";
 
-      document.getElementById("connectBtn").addEventListener("click", () => {
-        const port = document.getElementById("portName").value.trim();
-        const baudRate = parseInt(
-          document.getElementById("baudRate").value,
-          10
-        );
+        if (error.name === "NotFoundError") {
+          return "Nenhuma porta serial encontrada ou porta recusada pelo usuário.";
+        }
+        if (error.name === "NetworkError") {
+          return "Falha ao abrir a porta serial (porta pode estar em uso por outro aplicativo).";
+        }
+        if (error.name === "SecurityError") {
+          return "Permissão negada para acessar a porta serial.";
+        }
+        if (error.name === "InvalidStateError") {
+          return "A porta já está aberta ou em estado inválido.";
+        }
+        if (
+          error.message &&
+          error.message.includes("Failed to open serial port")
+        ) {
+          return "Falha ao abrir a porta serial: verifique se ela está disponível e sem uso.";
+        }
+        return `Erro inesperado: ${error.message || error.name || error}`;
+      }
 
-        if (!port) {
-          log("⚠️ Informe a porta antes de conectar.");
+      let port = null;
+      let reader = null;
+      let inputDone = null;
+      let outputStream = null;
+
+      async function readLoop() {
+        while (true) {
+          try {
+            const { value, done } = await reader.read();
+            if (done) {
+              log("Leitura finalizada.");
+              break;
+            }
+            if (value) {
+              log("RX: " + value);
+            }
+          } catch (error) {
+            log("Erro na leitura: " + tratarErroSerial(error));
+            break;
+          }
+        }
+      }
+
+      document
+        .getElementById("connectBtn")
+        .addEventListener("click", async () => {
+          if (!("serial" in navigator)) {
+            log("Web Serial API não suportada neste navegador.");
+            return;
+          }
+
+          try {
+            port = await navigator.serial.requestPort();
+            const baudRate =
+              parseInt(document.getElementById("baudRate").value, 10) || 115200;
+            await port.open({ baudRate });
+
+            log("Porta aberta com baud rate " + baudRate);
+
+            const decoder = new TextDecoderStream();
+            inputDone = port.readable.pipeTo(decoder.writable);
+            const inputStream = decoder.readable;
+            reader = inputStream.getReader();
+
+            readLoop();
+
+            const encoder = new TextEncoderStream();
+            outputStream = encoder.writable;
+            outputStream.pipeTo(port.writable);
+
+            document.getElementById("sendBtn").disabled = false;
+            document.getElementById("disconnectBtn").disabled = false;
+            document.getElementById("connectBtn").disabled = true;
+          } catch (error) {
+            log("Erro ao abrir a porta: " + tratarErroSerial(error));
+          }
+        });
+
+      document.getElementById("sendBtn").addEventListener("click", async () => {
+        if (!port || !port.writable) {
+          log("Porta não está aberta.");
           return;
         }
 
-        ws = new WebSocket(`ws://localhost:8080`);
-        ws.onopen = () => {
-          log("🔌 Conectado ao servidor.");
-          ws.send(JSON.stringify({ action: "open", port, baudRate }));
-        };
-
-        ws.onmessage = (event) => {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "log") log(msg.data);
-          if (msg.type === "error") log("❌ " + msg.data);
-          if (msg.type === "status" && msg.data === "open") {
-            document.getElementById("sendBtn").disabled = false;
-            document.getElementById("disconnectBtn").disabled = false;
-          }
-        };
-
-        ws.onerror = (err) => {
-          log("Erro WS: " + err.message);
-        };
-      });
-
-      document.getElementById("sendBtn").addEventListener("click", () => {
         const payload = document.getElementById("payload").value;
         const type = document.getElementById("payloadType").value;
-        ws.send(JSON.stringify({ action: "send", payload, type }));
+
+        try {
+          const writer = port.writable.getWriter();
+
+          if (type === "hex") {
+            // Remove espaços e converte hex para bytes
+            const hexString = payload.replace(/[^0-9a-fA-F]/g, "");
+            if (hexString.length % 2 !== 0) {
+              log("Payload hex inválido, comprimento ímpar.");
+              writer.releaseLock();
+              return;
+            }
+            const bytes = new Uint8Array(
+              hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+            );
+            await writer.write(bytes);
+            log("TX (hex): " + hexString.toUpperCase());
+          } else {
+            await writer.write(new TextEncoder().encode(payload));
+            log("TX (text): " + payload);
+          }
+
+          writer.releaseLock();
+        } catch (error) {
+          log("Erro ao enviar: " + tratarErroSerial(error));
+        }
       });
 
-      document.getElementById("disconnectBtn").addEventListener("click", () => {
-        ws.send(JSON.stringify({ action: "close" }));
-        ws.close();
-        document.getElementById("sendBtn").disabled = true;
-        document.getElementById("disconnectBtn").disabled = true;
-        log("🔌 Desconectado.");
-      });
+      document
+        .getElementById("disconnectBtn")
+        .addEventListener("click", async () => {
+          if (reader) {
+            await reader.cancel();
+            await inputDone.catch(() => {});
+            reader = null;
+            inputDone = null;
+          }
+          if (port) {
+            await port.close();
+            log("Porta fechada.");
+            port = null;
+          }
+
+          document.getElementById("sendBtn").disabled = true;
+          document.getElementById("disconnectBtn").disabled = true;
+          document.getElementById("connectBtn").disabled = false;
+        });
     </script>
   </body>
 </html>

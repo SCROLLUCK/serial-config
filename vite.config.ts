@@ -16,5 +16,11 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env": env,
     },
+    build: {
+      outDir: "dist",
+      rollupOptions: {
+        external: ["tailwindcss"],
+      },
+    },
   };
 });

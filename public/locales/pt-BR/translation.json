@@ -11,7 +11,8 @@
       "download": "Baixar",
       "connect": "Conectar",
       "disconnect": "Desconectar",
-      "send": "Enviar"
+      "send": "Enviar",
+      "apply": "Aplicar Configurações"
     },
     "common": {
       "copyright": "Todos os direitos reservados © 2025",
@@ -57,7 +58,11 @@
         "host": "Host",
         "port": "Porta",
         "mqttUser": "Usuário MQTT",
-        "mqttPassword": "Senha MQTT"
+        "mqttPassword": "Senha MQTT",
+        "staticIP": "IP Estático",
+        "netmask": "Máscara de Rede",
+        "gateway": "Gateway",
+        "customCommand": "Comando Personalizado"
       }
     },
     "error": {
@@ -133,7 +138,13 @@
       "staticIP": "IP Estático",
       "mqttConfig": "Configuração MQTT",
       "ntpConfig": "Configuração NTP",
-      "groundingConfig": "Configuração de Aterramento"
+      "groundingConfig": "Configuração de Aterramento",
+      "useStaticIP": "Usar IP Estático",
+      "netmask": "Máscara de Rede",
+      "gateway": "Gateway",
+      "staticIPConfig": "Configuração de IP Estático",
+      "customCommand": "Comando Personalizado",
+      "customConfig": "Configuração Personalizada"
     },
     "event": {
       "events": "Eventos",

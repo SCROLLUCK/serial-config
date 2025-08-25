@@ -1,0 +1,25 @@
+server {
+    listen 80;
+    server_name ${HOST_IP};
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /env.js {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        try_files $uri =404;
+    }
+
+    # Opcional: cache para arquivos estáticos
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        expires 6M;
+        access_log off;
+        add_header Cache-Control "public";
+    }
+
+    error_page 404 /index.html;
+}

@@ -2,16 +2,7 @@
   "name": "serial-config-flex",
   "compatibility_date": "2025-08-25",
   "main": "src/main.tsx",
-  "rules": [
-    {
-      "type": "ESModule",
-      "globs": ["**/*.css"]
-    }
-  ],
-  "assets": [
-    {
-      "directory": "src",
-      "include": ["**/*.css"]
-    }
-  ]
+  "assets": {
+    "directory": "./dist"
+  }
 }

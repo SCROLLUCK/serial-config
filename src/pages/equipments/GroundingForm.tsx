@@ -9,12 +9,10 @@ import {
   Form,
   FormLabel,
   FormControl,
-  FormMessage,
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
 
 interface Props {

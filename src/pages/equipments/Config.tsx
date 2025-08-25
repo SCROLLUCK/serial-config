@@ -30,15 +30,11 @@ export default function Config() {
   const [, setInputDone] = useState<any>(null);
   const [, setOutputStream] = useState<any>(null);
 
-  // Buffer para acumular dados recebidos
   const dataBuffer = useRef<string>("");
-  // Timer para processar dados acumulados
   const processTimer = useRef<any>(null);
-  // Referência para controlar se o loop de leitura está ativo
   const isReading = useRef<boolean>(false);
 
   const handleCommand = useCallback((command: string, data: any) => {
-    // Removi a verificação do inputDone aqui, pois não é relevante para gerar o comando
     switch (command) {
       case "apply":
         return `restart`;
@@ -209,13 +205,10 @@ export default function Config() {
     return `Erro inesperado: ${error.message || error.name || error}`;
   }
 
-  // Função para processar dados acumulados linha por linha
   const processBufferedData = useCallback(() => {
     if (dataBuffer.current.length > 0) {
-      // Dividir o buffer em linhas usando '\r\n' como delimitador
       const lines = dataBuffer.current.split("\r\n");
 
-      // Manter a última linha incompleta no buffer para processamento futuro
       const lastLine = lines.pop() || "";
 
       // Processar cada linha completa
@@ -228,7 +221,6 @@ export default function Config() {
         }
       });
 
-      // Manter apenas a linha incompleta no buffer
       dataBuffer.current = lastLine;
     }
   }, [handleToast, log, processAnsiColors]);
@@ -248,7 +240,6 @@ export default function Config() {
 
           if (done) {
             log("Leitura finalizada.");
-            // Processar qualquer dado restante no buffer antes de finalizar
             if (dataBuffer.current.length > 0) {
               const processedData = processAnsiColors(dataBuffer.current);
               handleToast(processedData);
@@ -259,21 +250,17 @@ export default function Config() {
           }
 
           if (value) {
-            // Acumular dados no buffer
             dataBuffer.current += value;
 
-            // Verificar se temos linhas completas para processar imediatamente
             if (dataBuffer.current.includes("\r\n")) {
               processBufferedData();
             }
 
-            // Processar após um pequeno delay para agrupar dados fragmentados
             if (processTimer.current) {
               clearTimeout(processTimer.current);
             }
 
             processTimer.current = setTimeout(() => {
-              // Processar qualquer dado restante no buffer
               if (dataBuffer.current.length > 0) {
                 const processedData = processAnsiColors(dataBuffer.current);
                 handleToast(processedData);
@@ -306,7 +293,6 @@ export default function Config() {
         return;
       }
 
-      // Fechar porta existente se houver
       if (port) {
         await handleDisconnect();
       }
@@ -323,8 +309,7 @@ export default function Config() {
 
       log(`Porta aberta com baud rate ${baudRate}`);
 
-      // Configurar streams de LEITURA (recebimento de dados)
-      const textDecoder = new TextDecoderStream("utf-8"); // Especificar codificação UTF-8
+      const textDecoder = new TextDecoderStream("utf-8");
       const readableStreamClosed = newPort.readable.pipeTo(
         textDecoder.writable
       );
@@ -338,10 +323,10 @@ export default function Config() {
 
       // Criar reader e writer
       const newReader = inputStream.getReader();
-      const newWriter = textEncoder.writable.getWriter(); // Writer para enviar dados
+      const newWriter = textEncoder.writable.getWriter();
 
       setReader(newReader);
-      setWriter(newWriter); // Você precisa ter um estado para o writer também
+      setWriter(newWriter);
     } catch (error: any) {
       log("Error selecting port: " + tratarErroSerial(error));
       toast.error(`Error selecting port: ${error.message}`);
@@ -378,7 +363,6 @@ export default function Config() {
     };
   }, [closeAllPorts, handleDisconnect]);
 
-  // Efeito para iniciar o loop de leitura quando o reader muda
   useEffect(() => {
     if (reader && !isReading.current) {
       readLoop();
@@ -390,7 +374,7 @@ export default function Config() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/equipments">
+            <BreadcrumbLink href="/">
               {t("app.equipment.equipments")}
             </BreadcrumbLink>
             <BreadcrumbSeparator />

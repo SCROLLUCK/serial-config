@@ -14,16 +14,16 @@ import StaticIPForm from "./StaticIPForm";
 import MQTTForm from "./MQTTForm";
 import NTPForm from "./NTPForm";
 import GroundingForm from "./GroundingForm";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import CustomForm from "./CustomFrom";
 
 export default function Config() {
   const { t } = useTranslation();
 
   const [currentCommand, setCurrentCommand] = useState<any>(null);
   const [port, setPort] = useState<any | null>(null);
-  const [baudRate, setBaudRate] = useState<number>(115200);
+  const baudRate = 115200;
 
   const [reader, setReader] = useState<any>(null);
   const [writer, setWriter] = useState<any>(null);
@@ -40,20 +40,22 @@ export default function Config() {
   const handleCommand = useCallback((command: string, data: any) => {
     // Removi a verificação do inputDone aqui, pois não é relevante para gerar o comando
     switch (command) {
+      case "apply":
+        return `restart`;
       case "staticIP":
-        // Lógica para comando staticIP
-        // Exemplo: return `set_static_ip ${data.ip} ${data.netmask} ${data.gateway}`;
-        return null;
+        return `set_ip_config ${data.static ? "1" : "0"} "${data.staticIP}" "${
+          data.netmask
+        }" "${data.gateway}"`;
       case "mqttConfig":
         return `set_mqtt_config ${data.host} ${data.port} "${data.user}" "${data.pass}"`;
       case "ntpConfig":
-        // Lógica para comando ntpConfig
-        // Exemplo: return `set_ntp_server ${data.server}`;
-        return null;
+        return `set_ntp_config ${data.host} ${data.port}`;
+      case "customConfig":
+        return `${data.custom}`;
       case "groundingConfig":
-        // Lógica para comando groundingConfig
-        // Exemplo: return `set_grounding ${data.enabled ? "on" : "off"}`;
-        return null;
+        return `set_gnd_enabled ${data.grd1 ? 1 : 0} ${data.grd2 ? 1 : 0} ${
+          data.grd3 ? 1 : 0
+        } ${data.esd1 ? 1 : 0} ${data.esd2 ? 1 : 0}`;
       default:
         return null;
     }
@@ -100,7 +102,7 @@ export default function Config() {
     {
       name: t("app.equipment.staticIP"),
       value: "staticIP",
-      form: <StaticIPForm />,
+      form: <StaticIPForm sendData={(data) => sendCommand("staticIP", data)} />,
     },
     {
       name: t("app.equipment.mqttConfig"),
@@ -110,12 +112,23 @@ export default function Config() {
     {
       name: t("app.equipment.ntpConfig"),
       value: "ntpConfig",
-      form: <NTPForm />,
+      form: <NTPForm sendData={(data) => sendCommand("ntpConfig", data)} />,
     },
     {
       name: t("app.equipment.groundingConfig"),
       value: "groundingConfig",
-      form: <GroundingForm />,
+      form: (
+        <GroundingForm
+          sendData={(data) => sendCommand("groundingConfig", data)}
+        />
+      ),
+    },
+    {
+      name: t("app.equipment.customCommand"),
+      value: "customConfig",
+      form: (
+        <CustomForm sendData={(data) => sendCommand("customConfig", data)} />
+      ),
     },
   ];
 
@@ -130,14 +143,50 @@ export default function Config() {
       .replace(/\n/g, "<br/>"); // Quebras de linha Unix
   }, []);
 
-  // Função para processar dados acumulados
-  const processBufferedData = useCallback(() => {
-    if (dataBuffer.current.length > 0) {
-      const processedData = processAnsiColors(dataBuffer.current);
-      log(processedData);
-      dataBuffer.current = "";
+  const handleToast = useCallback((message: string) => {
+    switch (true) {
+      case message.includes("Configurações de MQTT salvas"):
+        toast.success("Configurações de MQTT salvas com sucesso!", {
+          position: "top-right",
+        });
+        break;
+      case message.includes("Configurações de rede salvas"):
+        toast.success("Configurações de rede salvas com sucesso!", {
+          position: "top-right",
+        });
+        break;
+      case message.includes("Configurações de NTP salvas"):
+        toast.success("Configurações de NTP salvas com sucesso!", {
+          position: "top-right",
+        });
+        break;
+      case message.includes("Configurações de monitoramento de GND salvas"):
+        toast.success(
+          "Configurações de monitoramento de GND salvas com sucesso!",
+          {
+            position: "top-right",
+          }
+        );
+        break;
+      case message.includes("Unrecognized command"):
+        toast.error("Comando não reconhecido.", {
+          position: "top-right",
+        });
+        break;
+      case message.includes("Command returned non-zero error code"):
+        toast.error("Ocorreu um erro ao processar o comando.", {
+          position: "top-right",
+        });
+        break;
+      case message.includes("Configuração de rede inválida"):
+        toast.error("Configuração de rede inválida.", {
+          position: "top-right",
+        });
+        break;
+      default:
+        break;
     }
-  }, [log, processAnsiColors]);
+  }, []);
 
   function tratarErroSerial(error: any) {
     if (!error) return "Erro desconhecido";
@@ -160,6 +209,30 @@ export default function Config() {
     return `Erro inesperado: ${error.message || error.name || error}`;
   }
 
+  // Função para processar dados acumulados linha por linha
+  const processBufferedData = useCallback(() => {
+    if (dataBuffer.current.length > 0) {
+      // Dividir o buffer em linhas usando '\r\n' como delimitador
+      const lines = dataBuffer.current.split("\r\n");
+
+      // Manter a última linha incompleta no buffer para processamento futuro
+      const lastLine = lines.pop() || "";
+
+      // Processar cada linha completa
+      lines.forEach((line) => {
+        if (line.trim().length > 0) {
+          // Ignorar linhas vazias
+          const processedData = processAnsiColors(line);
+          handleToast(processedData);
+          log(processedData);
+        }
+      });
+
+      // Manter apenas a linha incompleta no buffer
+      dataBuffer.current = lastLine;
+    }
+  }, [handleToast, log, processAnsiColors]);
+
   const readLoop = useCallback(async () => {
     if (!reader || isReading.current) {
       return;
@@ -175,6 +248,13 @@ export default function Config() {
 
           if (done) {
             log("Leitura finalizada.");
+            // Processar qualquer dado restante no buffer antes de finalizar
+            if (dataBuffer.current.length > 0) {
+              const processedData = processAnsiColors(dataBuffer.current);
+              handleToast(processedData);
+              log(processedData);
+              dataBuffer.current = "";
+            }
             break;
           }
 
@@ -182,14 +262,25 @@ export default function Config() {
             // Acumular dados no buffer
             dataBuffer.current += value;
 
+            // Verificar se temos linhas completas para processar imediatamente
+            if (dataBuffer.current.includes("\r\n")) {
+              processBufferedData();
+            }
+
             // Processar após um pequeno delay para agrupar dados fragmentados
             if (processTimer.current) {
               clearTimeout(processTimer.current);
             }
 
             processTimer.current = setTimeout(() => {
-              processBufferedData();
-            }, 50);
+              // Processar qualquer dado restante no buffer
+              if (dataBuffer.current.length > 0) {
+                const processedData = processAnsiColors(dataBuffer.current);
+                handleToast(processedData);
+                log(processedData);
+                dataBuffer.current = "";
+              }
+            }, 100);
           }
         } catch (error) {
           log("Erro na leitura: " + tratarErroSerial(error));
@@ -202,7 +293,7 @@ export default function Config() {
         reader.releaseLock();
       }
     }
-  }, [log, reader, processBufferedData]);
+  }, [log, reader, processBufferedData, handleToast, processAnsiColors]);
 
   const handleDisconnect = useCallback(async () => {
     window.location.reload();
@@ -239,12 +330,11 @@ export default function Config() {
       );
       const inputStream = textDecoder.readable;
 
-      // Configurar streams de ESCRITA (envio de dados)
-      const textEncoder = new TextEncoderStream(); // Especificar codificação UTF-8
-      textEncoder.readable.pipeTo(newPort.writable); // CORREÇÃO: pipe na direção correta
+      const textEncoder = new TextEncoderStream();
+      textEncoder.readable.pipeTo(newPort.writable);
 
       setInputDone(readableStreamClosed);
-      setOutputStream(textEncoder.writable); // Stream para escrita
+      setOutputStream(textEncoder.writable);
 
       // Criar reader e writer
       const newReader = inputStream.getReader();
@@ -314,7 +404,7 @@ export default function Config() {
         {t("app.equipment.configEquipment")}
       </h1>
 
-      <div className="grid gap-4 grid-cols-3">
+      <div className="grid gap-4 grid-cols-4">
         <Combobox
           options={commands.map((command: any) => ({
             value: command.value,
@@ -331,25 +421,26 @@ export default function Config() {
           disabled={false}
         />
 
-        <Input
-          value={baudRate}
-          type="text"
-          width="w-full"
-          placeholder="Baud rate"
-          onChange={(e) => setBaudRate(Number(e.target.value))}
-        />
         {!port ? (
           <Button className="w-full" onClick={handleSelectPort}>
             {t("app.btn.connect")}
           </Button>
         ) : (
-          <Button
-            className="w-full"
-            variant="destructive"
-            onClick={handleDisconnect}
-          >
-            {t("app.btn.disconnect")}
-          </Button>
+          <>
+            <Button
+              className="w-full"
+              variant="destructive"
+              onClick={handleDisconnect}
+            >
+              {t("app.btn.disconnect")}
+            </Button>
+            <Button
+              className="w-full"
+              onClick={() => sendCommand("apply", null)}
+            >
+              {t("app.btn.apply")}
+            </Button>
+          </>
         )}
       </div>
       {

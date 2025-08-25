@@ -13,21 +13,18 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Props {
   sendData: (data: any) => void;
 }
 
-export default function NTPForm({ sendData }: Props) {
+export default function CustomForm({ sendData }: Props) {
   const { t } = useTranslation();
 
   const FormSchema = z.object({
-    host: z.string().min(1, {
-      message: t("app.form.required"),
-    }),
-    port: z.string().min(1, {
+    custom: z.string().min(1, {
       message: t("app.form.required"),
     }),
   });
@@ -35,8 +32,7 @@ export default function NTPForm({ sendData }: Props) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      host: "",
-      port: "",
+      custom: "",
     },
   });
 
@@ -51,7 +47,7 @@ export default function NTPForm({ sendData }: Props) {
   return (
     <div className="gap-6 flex flex-col">
       <h2 className="text-1xl font-bold text-flex">
-        {t("app.equipment.ntpConfig")}
+        {t("app.equipment.customConfig")}
       </h2>
 
       <Form {...form}>
@@ -62,33 +58,15 @@ export default function NTPForm({ sendData }: Props) {
           <div className="flex lg:flex-row flex-col gap-6">
             <FormField
               control={form.control}
-              name="host"
+              name="custom"
               render={({ field }) => (
-                <FormItem className="lg:w-[300px] w-full">
-                  <FormLabel>{t("app.common.host")}</FormLabel>
+                <FormItem className="w-full">
+                  <FormLabel>{t("app.equipment.customCommand")}</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder={t("app.form.placeholder.host")}
+                    <Textarea
+                      placeholder={t("app.form.placeholder.customCommand")}
                       {...field}
                       className="w-full"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="port"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("app.common.port")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t("app.form.placeholder.port")}
-                      type="number"
-                      {...field}
-                      className="lg:w-[300px] w-full"
                     />
                   </FormControl>
                   <FormMessage />

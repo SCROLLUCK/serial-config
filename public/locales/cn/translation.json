@@ -8,7 +8,11 @@
       "register": "注册",
       "login": "登录",
       "ok": "确定",
-      "download": "下载"
+      "download": "下载",
+      "connect": "连接",
+      "disconnect": "断开连接",
+      "send": "发送",
+      "apply": "应用设置"
     },
     "common": {
       "copyright": "版权所有 © 2025",
@@ -22,10 +26,14 @@
       "chinese": "中文",
       "english": "英语",
       "to": "至",
-      "clearFilters": "清除筛选条件",
+      "clearFilters": "清除筛选",
       "disconnected": "实时连接已断开，数据可能不是最新的。",
       "page": "页码",
-      "pageSize": "每页项目数"
+      "pageSize": "每页项目数",
+      "host": "主机",
+      "port": "端口",
+      "user": "用户",
+      "pass": "密码"
     },
     "form": {
       "required": "必填",
@@ -35,6 +43,7 @@
         "selectEquipment": "选择监控设备",
         "selectCompany": "选择公司",
         "selectCompanyPlaceholder": "选择公司",
+        "selectCommand": "选择命令",
         "nameUser": "您的姓名",
         "password": "您的密码",
         "email": "您的邮箱",
@@ -45,22 +54,30 @@
         "serialEquipment": "设备序列号",
         "describeCause": "描述原因",
         "describeProblem": "描述问题",
-        "describeSolution": "描述解决方案"
+        "describeSolution": "描述解决方案",
+        "host": "主机",
+        "port": "端口",
+        "mqttUser": "MQTT 用户",
+        "mqttPassword": "MQTT 密码",
+        "staticIP": "静态 IP",
+        "netmask": "子网掩码",
+        "gateway": "网关",
+        "customCommand": "自定义命令"
       }
     },
     "error": {
       "title": "发生错误",
       "unauthorized.expiredToken": "令牌已过期",
       "semantic.missingException": "必填字段",
-      "conflict.equipmentOnIsAlreadyInDatabase": "设备已用于其他生产线",
+      "conflict.equipmentOnIsAlreadyInDatabase": "设备已在另一条生产线上使用",
       "conflict.registrationIsAlreadyInDatabase": "注册号已存在",
-      "conflict.nameIsAlreadyInDatabase": "名称已存在",
-      "conflict.lineNameIsAlreadyInDatabase": "生产线名称已存在",
-      "conflict.emailIsAlreadyInDatabase": "邮箱已存在",
-      "conflict.phoneIsAlreadyInDatabase": "电话已存在",
+      "conflict.nameIsAlreadyInDatabase": "名称已注册",
+      "conflict.lineNameIsAlreadyInDatabase": "生产线名称已注册",
+      "conflict.emailIsAlreadyInDatabase": "邮箱已注册",
+      "conflict.phoneIsAlreadyInDatabase": "电话已注册",
       "validation.phoneInvalidFormat": "电话格式无效",
       "unauthorized.invalidRegistration": "无效的注册号",
-      "unauthorized.invalidPassword": "无效的密码",
+      "unauthorized.invalidPassword": "密码无效",
       "field": {
         "id": "ID",
         "name": "名称",
@@ -75,7 +92,8 @@
       "registration": "凭据",
       "slogan": "工业环境中保护接地和ESD接地的连续监控系统",
       "password": "密码",
-      "forgotPassword": "忘记密码？"
+      "forgotPassword": "忘记密码？",
+      "forgotPasswordDescription": "请联系管理员重置您的密码。"
     },
     "user": {
       "users": "用户",
@@ -89,7 +107,8 @@
       "deleteUserDescription": "确定要删除用户“<USER>”吗？此操作无法撤销。",
       "editUser": "编辑用户",
       "password": "密码",
-      "confirmPassword": "确认密码"
+      "confirmPassword": "确认密码",
+      "isAdmin": "管理员"
     },
     "line": {
       "lines": "生产线",
@@ -112,11 +131,22 @@
     "equipment": {
       "equipment": "设备",
       "equipments": "设备",
+      "configEquipment": "配置设备",
       "newEquipment": "新设备",
       "registerEquipment": "注册设备",
       "editEquipment": "编辑设备",
       "deleteEquipment": "删除设备",
-      "deleteEquipmentDescription": "确定要删除设备<EQUIPMENT>吗？此操作无法撤销。"
+      "deleteEquipmentDescription": "确定要删除设备 <EQUIPMENT> 吗？此操作无法撤销。",
+      "staticIP": "静态 IP",
+      "mqttConfig": "MQTT 配置",
+      "ntpConfig": "NTP 配置",
+      "groundingConfig": "接地配置",
+      "useStaticIP": "使用静态 IP",
+      "netmask": "子网掩码",
+      "gateway": "网关",
+      "staticIPConfig": "静态 IP 配置",
+      "customCommand": "自定义命令",
+      "customConfig": "自定义配置"
     },
     "event": {
       "events": "事件",
@@ -135,7 +165,7 @@
       "maintenance": "维护",
       "maintenanceDate": "维护日期",
       "reportMaintenance": "报告维护",
-      "availableOnlyOnFinishedEvent": "仅适用于已结束的事件",
+      "availableOnlyOnFinishedEvent": "仅在已完成的事件中可用",
       "grounding": "接地",
       "duration": "持续时间",
       "ESD1": "ESD 1",

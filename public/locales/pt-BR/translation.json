@@ -75,6 +75,7 @@
       "conflict.lineNameIsAlreadyInDatabase": "Nome da linha já cadastrada",
       "conflict.emailIsAlreadyInDatabase": "E-mail já cadastrado",
       "conflict.phoneIsAlreadyInDatabase": "Telefone já cadastrado",
+      "conflict.equipmentWithLineAlreadyExists": "Equipamento já associado a uma linha",
       "validation.phoneInvalidFormat": "Telefone inválido",
       "unauthorized.invalidRegistration": "Matrícula inválida",
       "unauthorized.invalidPassword": "Senha inválida",
@@ -92,7 +93,8 @@
       "registration": "Credenciais",
       "slogan": "Sistema de monitoramento contínuo de aterramentos de proteção e aterramentos ESD em um ambiente industrial",
       "password": "Senha",
-      "forgotPassword": "Esqueceu a senha?"
+      "forgotPassword": "Esqueceu a senha?",
+      "forgotPasswordDescription": "Entre em contato com um administrador para redefinir sua senha."
     },
     "user": {
       "users": "Usuários",
@@ -106,7 +108,8 @@
       "deleteUserDescription": "Deseja deletar o usuário \"<USER>\" ? Esta ação não pode ser desfeita.",
       "editUser": "Editar usuário",
       "password": "Senha",
-      "confirmPassword": "Confirmar senha"
+      "confirmPassword": "Confirmar senha",
+      "isAdmin": "Administrador"
     },
     "line": {
       "lines": "Linhas",
